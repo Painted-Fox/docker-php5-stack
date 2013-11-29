@@ -24,34 +24,44 @@ RUN DEBIAN_FRONTEND=noninteractive && \
     apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xcbcb082a1bb943db && \
     add-apt-repository 'deb http://mirror.jmu.edu/pub/mariadb/repo/5.5/ubuntu precise main' && \
     apt-get update && \
-    apt-get install -y mariadb-server \
-    nginx \
-    postfix \
-    php5-fpm php5-mysql php-apc php5-imagick php5-imap php5-mcrypt php5-gd libssh2-php && \
+    apt-get install -y \
+        openssh-server \
+        mariadb-server \
+        nginx \
+        postfix \
+        supervisor \
+        php5-fpm php5-mysql php-apc php5-imagick php5-imap php5-mcrypt php5-gd libssh2-php && \
     /etc/init.d/mysql stop
+
+# Ensure required directories exist for sshd and supervisor
+RUN mkdir -p /var/run/sshd && \
+    mkdir -p /var/log/supervisor
 
 # Decouple our data from our container.
 VOLUME ["/data"]
 
 # Configure the database to use our data dir.
-# Configure MariaDB to listen on any address.
-RUN sed -i -e 's/^datadir\s*=.*/datadir = \/data/' /etc/mysql/my.cnf && \
-    sed -i -e 's/^bind-address/#bind-address/' /etc/mysql/my.cnf
+RUN sed -i -e 's/^datadir\s*=.*/datadir = \/data/' /etc/mysql/my.cnf
 
 ADD nginx.conf /etc/nginx/nginx.conf
-ADD https://raw.github.com/h5bp/server-configs-nginx/master/h5bp/expires.conf /etc/nginx/conf/expires.conf
-ADD https://raw.github.com/h5bp/server-configs-nginx/master/h5bp/x-ua-compatible.conf /etc/nginx/conf/x-ua-compatible.conf
-ADD https://raw.github.com/h5bp/server-configs-nginx/master/h5bp/cross-domain-fonts.conf /etc/nginx/conf/cross-domain-fonts.conf
-ADD https://raw.github.com/h5bp/server-configs-nginx/master/h5bp/protect-system-files.conf /etc/nginx/conf/protect-system-files.conf
 ADD nginx-site.conf /etc/nginx/sites-available/default
+ADD https://github.com/h5bp/server-configs-nginx/archive/master.tar.gz /tmp/server-configs-nginx-master.tar.gz
+RUN tar -xzf /tmp/server-configs-nginx-master.tar.gz && \
+    cp -R server-configs-nginx-master/h5bp /etc/nginx && \
+    rm -rf server-configs-nginx-master && \
+    rm /tmp/server-configs-nginx-master.tar.gz
 RUN echo "cgi.fix_pathinfo = 0;" >> /etc/php5/fpm/php.ini && \
-    sed -i -e '/access_log/d' /etc/nginx/conf/expires.conf && \
+    sed -i -e 's/^;daemonize\s*=\s*yes/daemonize = no/' /etc/php5/fpm/php-fpm.conf && \
+    sed -i -e '/access_log/d' /etc/nginx/h5bp/location/expires.conf && \
     sed -i -e 's/^listen =.*/listen = \/var\/run\/php5-fpm.sock/' /etc/php5/fpm/pool.d/www.conf
+
+# Add the supervisord configuration.
+ADD supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Decouple our data from our container.
 VOLUME ["/srv/www"]
 
-EXPOSE 80
+EXPOSE 22 80
 ADD start.sh /start.sh
 RUN chmod +x /start.sh
 ENTRYPOINT ["/start.sh"]

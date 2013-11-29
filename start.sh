@@ -31,11 +31,15 @@ mysql -u root -e \
 mysql -u root -e \
     "DELETE FROM mysql.user WHERE user = 'docker'; CREATE USER 'docker'@'localhost' IDENTIFIED BY 'docker'; GRANT ALL PRIVILEGES ON *.* TO 'docker'@'localhost' WITH GRANT OPTION; CREATE USER 'docker'@'%' IDENTIFIED BY 'docker'; GRANT ALL PRIVILEGES ON *.* TO 'docker'@'%' WITH GRANT OPTION;" && \
 
+# Stop MariaDB, we will run this with supervisord
+/etc/init.d/mysql stop
+
 # Startup postfix
+# Can't find a good way to run this with supervisord
 /etc/init.d/postfix start
 
 # Ensure www-data owns the WEBDIR
 chown -R www-data $WEBDIR
 
-service php5-fpm start
-/usr/sbin/nginx
+# Start supervisord
+/usr/bin/supervisord
