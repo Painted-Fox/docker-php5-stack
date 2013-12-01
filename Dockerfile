@@ -37,6 +37,10 @@ RUN DEBIAN_FRONTEND=noninteractive && \
 RUN mkdir -p /var/run/sshd && \
     mkdir -p /var/log/supervisor
 
+# Set the root password to "Ahdooch3" (courtesy of pwgen).
+# This feels like a bad idea, but I can't think of a better solution at the moment.
+RUN echo "root:Ahdooch3" | chpasswd
+
 # Decouple our data from our container.
 VOLUME ["/data"]
 
