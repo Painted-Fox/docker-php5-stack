@@ -47,6 +47,9 @@ VOLUME ["/data"]
 # Configure the database to use our data dir.
 RUN sed -i -e 's/^datadir\s*=.*/datadir = \/data/' /etc/mysql/my.cnf
 
+# Allow anyone to write to /tmp.  MariaDB depends on this.
+RUN chmod a+w /tmp
+
 ADD nginx.conf /etc/nginx/nginx.conf
 ADD nginx-site.conf /etc/nginx/sites-available/default
 ADD https://github.com/h5bp/server-configs-nginx/archive/master.tar.gz /tmp/server-configs-nginx-master.tar.gz
