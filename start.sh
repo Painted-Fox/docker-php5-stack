@@ -38,6 +38,16 @@ mysql -u root -e \
 # Can't find a good way to run this with supervisord
 /etc/init.d/postfix start
 
+# Startup cron
+# rsyslog depends on cron
+cron
+
+# Startup rsyslog
+# This allows postfix to log to /var/log/mail.log and /var/log/mail.err
+(/lib/init/apparmor-profile-load usr.sbin.rsyslogd && \
+    . /etc/default/rsyslog && \
+    exec rsyslogd $RSYSLOGD_OPTIONS)
+
 # Ensure www-data owns the WEBDIR
 chown -R www-data $WEBDIR
 

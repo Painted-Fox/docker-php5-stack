@@ -30,8 +30,12 @@ RUN DEBIAN_FRONTEND=noninteractive && \
         nginx \
         postfix \
         supervisor \
-        php5-fpm php5-mysql php-apc php5-imagick php5-imap php5-mcrypt php5-gd libssh2-php && \
+        php5-fpm php5-mysql php-apc php5-imagick php5-imap php5-mcrypt php5-gd libssh2-php \
+        rsyslog && \
     /etc/init.d/mysql stop
+
+# Configure Postfix
+run postconf -e mydestination="localhost.localdomain, localhost"
 
 # Ensure required directories exist for sshd and supervisor
 RUN mkdir -p /var/run/sshd && \
